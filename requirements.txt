@@ -1,0 +1,10 @@
+pandas
+langchain
+langchain-community
+google-cloud-aiplatform
+langchain-google-vertexai
+# Gemini API çağrılarını kullanmak için gerekli:
+langchain-google-genai 
+faiss-cpu 
+# Web arayüzü için gerekli:
+streamlit
