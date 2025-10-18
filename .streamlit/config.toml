@@ -1,0 +1,7 @@
+[server]
+# Bu ayar, Streamlit'in FAISS klasörünü görmezden gelmesini sağlar.
+# Ancak, bu standart bir Streamlit komutu değildir, sadece kodun çalışmasını engelleyen 
+# istenmeyen bir dosyayı gizlemeye yönelik bir denemedir.
+
+# Alternatif olarak, FAISS klasörünü .gitignore'a zaten ekledik,
+# bu yüzden bu adım yerine FAISS'in yeniden oluşturulmasını deneyelim.
