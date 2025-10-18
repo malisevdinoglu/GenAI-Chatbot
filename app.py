@@ -5,12 +5,31 @@ import os
 # Not: main.py dosyanızın aynı klasörde olduğundan emin olun!
 from main import load_vector_store, create_conversational_chain, PROJECT_ID 
 
+# --- GÜNCELLENEN KISIM: Secrets'ı okuma ve Ortam Değişkeni olarak ayarlama ---
+try:
+    # Secrets'tan değişkenleri okuyup os.environ'a ayarlıyoruz.
+    # Vertex AI (LangChain) bu ortam değişkenlerini otomatik olarak okuyacaktır.
+    os.environ["GOOGLE_PROJECT_ID"] = st.secrets["GOOGLE_PROJECT_ID"] 
+    os.environ["GOOGLE_SERVICE_ACCOUNT"] = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
+
+    # main.py'deki global PROJECT_ID değişkenini secrets'tan alınan değerle güncelliyoruz.
+    # Bu, setup_rag_pipeline fonksiyonunun doğru ID'yi kullanmasını sağlar.
+    # Not: main.py'deki PROJECT_ID'nin değeri burada geçersiz olacaktır.
+    PROJECT_ID = st.secrets["GOOGLE_PROJECT_ID"]
+
+    st.session_state["location"] = "us-central1" # Streamlit başlığı için konumu sakla
+except Exception:
+    # Secrets ayarlanmamışsa, lokalde çalışmayı denemek için hata vermeden geç
+    pass 
+# ---------------------------------------------------------------------------------
+
+
 # Streamlit, bu fonksiyonu sadece bir kere çalıştırır ve sonucunu önbelleğe alır.
 @st.cache_resource
 def setup_rag_pipeline():
     """RAG zincirini yükler ve hazırlar."""
     
-    # Proje ID'sinin ayarlı olduğundan emin olalım (main.py dosyanızdan geliyor)
+    # Proje ID'sinin ayarlı olduğundan emin olalım
     if not PROJECT_ID or PROJECT_ID == "SENIN-PROJE-IDN":
         st.error("HATA: Lütfen main.py dosyasında geçerli bir Proje ID'si girin.")
         return None
@@ -19,7 +38,7 @@ def setup_rag_pipeline():
     st.write("Vektör deposu yükleniyor...")
     vector_store = load_vector_store(project_id=PROJECT_ID)
     if not vector_store:
-        st.error("Vektör deposu yüklenemedi. Lütfen FAISS klasörünün varlığını ve main.py'deki konumunu kontrol edin.")
+        st.error("Vektör deposu yüklenemedi. Lütfen FAISS klasörünün varlığını kontrol edin.")
         return None
     
     # Sohbet zinciri oluşturuluyor
@@ -36,6 +55,7 @@ def setup_rag_pipeline():
 
 st.set_page_config(page_title="Tarif Asistanı", layout="wide")
 st.title("🍜 Sağlıklı Tarif Asistanı (RAG Chatbot)")
+# Başlıkta location bilgisini de gösterelim
 st.caption(f"LLM: Gemini / Embedding: text-embedding-004 / Konum: {st.session_state.get('location', 'us-central1')}")
 
 # RAG zincirini kur
@@ -72,7 +92,7 @@ if rag_chain:
                 except Exception as e:
                     # Hata olursa logla ve kullanıcıya göster
                     print(f"Zincir çağrılırken hata: {e}")
-                    full_answer = "Üzgünüm, API çağrısında bir sorun oluştu. Lütfen terminali kontrol edin."
+                    full_answer = "Üzgünüm, API çağrısında bir sorun oluştu. Lütfen uygulamanın loglarını kontrol edin."
                 
                 st.markdown(full_answer)
                 
