@@ -8,3 +8,4 @@ langchain-google-genai
 faiss-cpu 
 # Web arayüzü için gerekli:
 streamlit
+langchain-core
