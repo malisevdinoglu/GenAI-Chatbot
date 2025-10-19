@@ -1,16 +1,19 @@
 import os
 
 import pandas as pd
+from google.oauth2 import service_account
+
 try:
     import streamlit as st
     from streamlit.runtime.scriptrunner import get_script_run_ctx
 except Exception:
     st = None
+
     def get_script_run_ctx():
         return None
 
 # LangChain v0.1.16 için doğru import yolunu kullanıyoruz
-from langchain_core.documents import Document 
+from langchain_core.documents import Document
 # ChromaDB importu
 from langchain_community.vectorstores import Chroma
 from langchain_google_vertexai import VertexAIEmbeddings
@@ -21,7 +24,16 @@ PROJECT_ID = "genai-final-project-475415"
 def build_embeddings(project_id, location=None, model_name="text-embedding-004"):
     """Vertex AI metin embedding modelini hazırlar."""
     location = location or os.environ.get("GOOGLE_LOCATION", "us-central1")
-    return VertexAIEmbeddings(project=project_id, location=location, model_name=model_name)
+    credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    credentials = None
+    if credentials_path and os.path.exists(credentials_path):
+        credentials = service_account.Credentials.from_service_account_file(credentials_path)
+    return VertexAIEmbeddings(
+        project=project_id,
+        location=location,
+        model_name=model_name,
+        credentials=credentials,
+    )
 
 def _emit_streamlit_exception(message, exception):
     """Streamlit oturumu varsa hatayı ekranda gösterir."""

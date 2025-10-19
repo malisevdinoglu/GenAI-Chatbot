@@ -1,20 +1,23 @@
 import os
 import pandas as pd
-from langchain_core.documents import Document 
+from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
+
+from google.oauth2 import service_account
 
 try:
     import streamlit as st
     from streamlit.runtime.scriptrunner import get_script_run_ctx
 except Exception:
     st = None
+
     def get_script_run_ctx():
         return None
 
 # Vertex AI'dan sadece LLM için gerekli olanı import ediyoruz
-from langchain_google_vertexai import VertexAI, VertexAIEmbeddings 
+from langchain_google_vertexai import VertexAI, VertexAIEmbeddings
 
 PROJECT_ID = "genai-final-project-475415" 
 
@@ -38,7 +41,16 @@ def load_vector_store(project_id, index_path="chroma_db_recipes"):
         return None
     try:
         location = os.environ.get("GOOGLE_LOCATION", "us-central1")
-        embeddings = VertexAIEmbeddings(project=project_id, location=location, model_name="text-embedding-004")
+        credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        credentials = None
+        if credentials_path and os.path.exists(credentials_path):
+            credentials = service_account.Credentials.from_service_account_file(credentials_path)
+        embeddings = VertexAIEmbeddings(
+            project=project_id,
+            location=location,
+            model_name="text-embedding-004",
+            credentials=credentials,
+        )
         vector_store = Chroma(persist_directory=index_path, embedding_function=embeddings) 
         
         print("Vektör deposu başarıyla yüklendi.")
@@ -52,8 +64,18 @@ def create_conversational_chain(project_id, vector_store):
     """Sohbet zincirini oluşturur."""
     try:
         location = os.environ.get("GOOGLE_LOCATION", "us-central1")
+        credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        credentials = None
+        if credentials_path and os.path.exists(credentials_path):
+            credentials = service_account.Credentials.from_service_account_file(credentials_path)
         # LLM (Gemini) için Vertex AI kullanılmaya devam ediyor.
-        llm = VertexAI(project=project_id, model_name="gemini-2.5-flash", temperature=0.7, location=location)
+        llm = VertexAI(
+            project=project_id,
+            model_name="gemini-2.5-flash",
+            temperature=0.7,
+            location=location,
+            credentials=credentials,
+        )
         
         memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
         
