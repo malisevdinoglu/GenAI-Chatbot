@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from langchain.docstore.document import Document
-from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import Chroma
 from langchain_google_vertexai import VertexAIEmbeddings
 
 # Proje Kimliğiniz (Project ID)
@@ -40,7 +40,7 @@ def create_new_vector_store(documents, project_id):
         # Bu, Service Account (Secrets) yetkilendirmesi ile çalışmalıdır.
         embeddings = VertexAIEmbeddings(project=project_id, model_name="text-embedding-004", location="us-central1") 
         
-        vector_store = FAISS.from_documents(documents, embeddings)
+        vector_store = Chroma.from_documents(documents, embeddings)
         vector_store.save_local("faiss_index_recipes")
         
         print("\nBaşarılı! 'faiss_index_recipes' adında yeni ve temiz bir veritabanı oluşturuldu.")

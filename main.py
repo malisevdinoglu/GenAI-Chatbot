@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from langchain.docstore.document import Document
-from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import Chroma
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 
@@ -24,7 +24,7 @@ def load_vector_store(project_id, index_path="faiss_index_recipes"):
     try:
         # Konum: us-central1 olarak güncellendi.
         embeddings = VertexAIEmbeddings(project=project_id, model_name="text-embedding-004",location="us-central1")
-        vector_store = FAISS.load_local(index_path, embeddings, allow_dangerous_deserialization=True)
+        vector_store = Chroma.load_local(index_path, embeddings, allow_dangerous_deserialization=True)
         print("Vektör deposu başarıyla yüklendi.")
         return vector_store
     except Exception as e:
