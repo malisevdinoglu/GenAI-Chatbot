@@ -1,30 +1,24 @@
 import os
 import pandas as pd
-from langchain.docstore.document import Document
+from langchain_core.documents import Document # Düzeltme 1: Document import yolu güncellendi
 from langchain_community.vectorstores import Chroma
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 
-# Vertex AI import'larına geri dönüyoruz:
 from langchain_google_vertexai import VertexAI, VertexAIEmbeddings 
 
-# !!! ÖNEMLİ: os.environ["GEMINI_API_KEY"] satırını siliyoruz !!!
-# Çünkü LLM için tekrar Vertex AI ve ADC (gcloud) yetkilendirmesi kullanacağız.
-
-# Proje Kimliğiniz (Project ID)
 PROJECT_ID = "genai-final-project-475415" 
 
-# --- Kurulum Fonksiyonları ---
-
-def load_vector_store(project_id, index_path="faiss_index_recipes"):
-    """Kaydedilmiş FAISS vektör deposunu yükler."""
+def load_vector_store(project_id, index_path="chroma_db_recipes"): # Düzeltme 2: Klasör adı Chroma'ya ayarlandı
+    """Kaydedilmiş Chroma vektör deposunu yükler."""
     if not os.path.exists(index_path):
-        print(f"Hata: '{index_path}' klasörü bulunamadı.")
+        # Hata mesajı Chroma klasörünü gösterecek
+        print(f"Hata: '{index_path}' klasörü bulunamadı.") 
         return None
     try:
-        # Konum: us-central1 olarak güncellendi.
         embeddings = VertexAIEmbeddings(project=project_id, model_name="text-embedding-004",location="us-central1")
-        vector_store = Chroma.load_local(index_path, embeddings, allow_dangerous_deserialization=True)
+        # Chroma yükleme yapısı
+        vector_store = Chroma(persist_directory=index_path, embedding_function=embeddings)
         print("Vektör deposu başarıyla yüklendi.")
         return vector_store
     except Exception as e:

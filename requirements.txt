@@ -8,12 +8,10 @@ google-cloud-aiplatform
 langchain-google-vertexai
 langchain-google-genai 
 
-# --- KRİTİK DEĞİŞİKLİK: FAISS Kurulumu için Sistem Bağımlılıkları ---
-# Streamlit Cloud'da faiss-cpu'dan önce build-essential paketini kurar.
-!:apt install -y build-essential 
 
-# Vektör veritabanı
-faiss-cpu 
+# Yeni vektör DB
+chromadb
+
 
 # Web arayüzü
 streamlit

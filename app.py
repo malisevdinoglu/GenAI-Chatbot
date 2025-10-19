@@ -3,64 +3,56 @@ import os
 
 from create_vector_store import load_and_prepare_data, create_new_vector_store
 # main.py dosyasından gerekli fonksiyonları ve değişkeni import ediyoruz
-# Not: main.py dosyanızın aynı klasörde olduğundan emin olun!
 from main import load_vector_store, create_conversational_chain, PROJECT_ID 
 
 # --- GÜNCELLENEN KISIM: Secrets'ı okuma ve Ortam Değişkeni olarak ayarlama ---
 try:
     # Secrets'tan değişkenleri okuyup os.environ'a ayarlıyoruz.
-    # Vertex AI (LangChain) bu ortam değişkenlerini otomatik olarak okuyacaktır.
     os.environ["GOOGLE_PROJECT_ID"] = st.secrets["GOOGLE_PROJECT_ID"] 
     os.environ["GOOGLE_SERVICE_ACCOUNT"] = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
 
-    # main.py'deki global PROJECT_ID değişkenini secrets'tan alınan değerle güncelliyoruz.
-    # Bu, setup_rag_pipeline fonksiyonunun doğru ID'yi kullanmasını sağlar.
-    # Not: main.py'deki PROJECT_ID'nin değeri burada geçersiz olacaktır.
     PROJECT_ID = st.secrets["GOOGLE_PROJECT_ID"]
 
     st.session_state["location"] = "us-central1" # Streamlit başlığı için konumu sakla
 except Exception:
-    # Secrets ayarlanmamışsa, lokalde çalışmayı denemek için hata vermeden geç
     pass 
 # ---------------------------------------------------------------------------------
 
 
 # Streamlit, bu fonksiyonu sadece bir kere çalıştırır ve sonucunu önbelleğe alır.
-# app.py dosyasındaki setup_rag_pipeline fonksiyonu
-
-# app.py dosyasındaki setup_rag_pipeline fonksiyonu, bu hali almalı:
-
-# app.py dosyasındaki setup_rag_pipeline fonksiyonu
 
 @st.cache_resource
 def setup_rag_pipeline():
     """RAG zincirini yükler ve hazırlar, yoksa oluşturur."""
     
+    # ChromaDB klasör adını tanımla
+    CHROMA_DB_PATH = "chroma_db_recipes" 
+    
     if not PROJECT_ID:
-        st.error("HATA: Proje ID'si ayarlanmadı.")
+        st.error("HATA: Proje ID'si ayarlanmadı. Lütfen Streamlit Secrets'ı kontrol edin.")
         return None
 
     # 1. Vektör deposu yükleniyor
     st.write("Vektör deposu yükleniyor...")
-    vector_store = load_vector_store(project_id=PROJECT_ID)
+    # Chroma'yı yüklemek için doğru klasör adını main.py'deki fonksiyona iletiyoruz.
+    vector_store = load_vector_store(project_id=PROJECT_ID, index_path=CHROMA_DB_PATH)
     
     # 2. Eğer yüklenemezse (klasör yoksa), sıfırdan oluşturmayı dene (OTOMATİK OLUŞTURMA)
     if not vector_store:
-        # Sarı uyarıyı gösterir (FAISS'in oluşturulduğu an)
-        st.warning("FAISS klasörü bulunamadı. Veritabanı yeniden oluşturuluyor. Bu işlem birkaç dakika sürebilir...")
+        # Sarı uyarıyı gösterir (FAISS/Chroma'nın oluşturulduğu an)
+        st.warning("Veritabanı bulunamadı. Veritabanı yeniden oluşturuluyor. Bu işlem birkaç dakika sürebilir...")
         
         # Veri setini yükle
         recipe_docs = load_and_prepare_data('recipes.csv') 
         
         if recipe_docs:
-            # Vektör veritabanını oluştur ve kaydet (API çağrısı burada gerçekleşir!)
+            # Vektör veritabanını oluştur ve kaydet
             create_new_vector_store(recipe_docs, PROJECT_ID)
             
             # Oluşturulduktan sonra tekrar yüklemeyi dene
-            vector_store = load_vector_store(project_id=PROJECT_ID)
+            vector_store = load_vector_store(project_id=PROJECT_ID, index_path=CHROMA_DB_PATH)
             
             if not vector_store:
-                 # Veritabanı oluşturma başarılı olmasına rağmen yüklenemezse bu hatayı verir.
                  st.error("Veritabanı oluşturulduktan sonra bile yüklenemedi. Lütfen logları kontrol edin.")
                  return None
         else:
@@ -77,6 +69,7 @@ def setup_rag_pipeline():
         return None
         
     return chain
+
 # --- Streamlit Arayüzü ---
 
 st.set_page_config(page_title="Tarif Asistanı", layout="wide")
