@@ -14,3 +14,4 @@ faiss_index_recipes/
 # Çıktı ve log dosyaları
 *.log
 *.out
+
