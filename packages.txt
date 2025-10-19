@@ -1,3 +1,0 @@
-# packages.txt
-# FAISS'in kurulumu için gerekli Linux sistem paketleri
-build-essential
