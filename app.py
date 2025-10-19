@@ -28,38 +28,43 @@ except Exception:
 # Streamlit, bu fonksiyonu sadece bir kere çalıştırır ve sonucunu önbelleğe alır.
 # app.py dosyasındaki setup_rag_pipeline fonksiyonu
 
+# app.py dosyasındaki setup_rag_pipeline fonksiyonu, bu hali almalı:
+
+# app.py dosyasındaki setup_rag_pipeline fonksiyonu
+
 @st.cache_resource
 def setup_rag_pipeline():
     """RAG zincirini yükler ve hazırlar, yoksa oluşturur."""
     
-    # Proje ID'sinin ayarlı olduğundan emin olalım (Secrets'tan geliyor)
     if not PROJECT_ID:
-        st.error("HATA: Proje ID'si ayarlanmadı. Lütfen Streamlit Secrets'ı kontrol edin.")
+        st.error("HATA: Proje ID'si ayarlanmadı.")
         return None
 
     # 1. Vektör deposu yükleniyor
     st.write("Vektör deposu yükleniyor...")
     vector_store = load_vector_store(project_id=PROJECT_ID)
     
-    # 2. Eğer yüklenemezse (klasör yoksa), sıfırdan oluşturmayı dene
+    # 2. Eğer yüklenemezse (klasör yoksa), sıfırdan oluşturmayı dene (OTOMATİK OLUŞTURMA)
     if not vector_store:
+        # Sarı uyarıyı gösterir (FAISS'in oluşturulduğu an)
         st.warning("FAISS klasörü bulunamadı. Veritabanı yeniden oluşturuluyor. Bu işlem birkaç dakika sürebilir...")
         
-        # Veri setini yükle ve hazırla (recipes.csv aynı klasörde olmalı!)
+        # Veri setini yükle
         recipe_docs = load_and_prepare_data('recipes.csv') 
         
         if recipe_docs:
-            # Vektör veritabanını oluştur ve kaydet (Bulut üzerinde API'leri çağırır!)
-            # Service Account yetkisi (Secrets) burada kullanılacaktır.
+            # Vektör veritabanını oluştur ve kaydet (API çağrısı burada gerçekleşir!)
             create_new_vector_store(recipe_docs, PROJECT_ID)
             
             # Oluşturulduktan sonra tekrar yüklemeyi dene
             vector_store = load_vector_store(project_id=PROJECT_ID)
             
             if not vector_store:
+                 # Veritabanı oluşturma başarılı olmasına rağmen yüklenemezse bu hatayı verir.
                  st.error("Veritabanı oluşturulduktan sonra bile yüklenemedi. Lütfen logları kontrol edin.")
                  return None
         else:
+             # recipes.csv bulunamazsa bu hatayı verir.
              st.error("Veri (recipes.csv) yüklenemediği için veritabanı oluşturulamadı.")
              return None
 
@@ -72,7 +77,6 @@ def setup_rag_pipeline():
         return None
         
     return chain
-
 # --- Streamlit Arayüzü ---
 
 st.set_page_config(page_title="Tarif Asistanı", layout="wide")
