@@ -4,7 +4,6 @@ venv/
 __pycache__/
 
 # Büyük dosyalar ve gereksiz kurulumlar
-recipes.csv
 google-cloud-cli*
 *.tar.gz
 
@@ -14,6 +13,4 @@ faiss_index_recipes/
 # Çıktı ve log dosyaları
 *.log
 *.out
-
-chroma_db_recipes/
 

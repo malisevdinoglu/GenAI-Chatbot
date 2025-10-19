@@ -6,8 +6,7 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 
 # Vertex AI'dan sadece LLM için gerekli olanı import ediyoruz
-from langchain_google_vertexai import VertexAI 
-# VertexAIEmbeddings importu kaldırıldı.
+from langchain_google_vertexai import VertexAI, VertexAIEmbeddings 
 
 PROJECT_ID = "genai-final-project-475415" 
 
@@ -18,9 +17,9 @@ def load_vector_store(project_id, index_path="chroma_db_recipes"):
         print(f"Hata: '{index_path}' klasörü bulunamadı.") 
         return None
     try:
-        # !!! KRİTİK DEĞİŞİKLİK: Embeddings objesi kaldırıldı !!!
-        # ChromaDB kendi varsayılan (lokal) embeddings modelini kullanacak.
-        vector_store = Chroma(persist_directory=index_path) 
+        location = os.environ.get("GOOGLE_LOCATION", "us-central1")
+        embeddings = VertexAIEmbeddings(project=project_id, location=location, model_name="text-embedding-004")
+        vector_store = Chroma(persist_directory=index_path, embedding_function=embeddings) 
         
         print("Vektör deposu başarıyla yüklendi.")
         return vector_store
@@ -31,8 +30,9 @@ def load_vector_store(project_id, index_path="chroma_db_recipes"):
 def create_conversational_chain(project_id, vector_store):
     """Sohbet zincirini oluşturur."""
     try:
+        location = os.environ.get("GOOGLE_LOCATION", "us-central1")
         # LLM (Gemini) için Vertex AI kullanılmaya devam ediyor.
-        llm = VertexAI(project=project_id, model_name="gemini-2.5-flash", temperature=0.7, location="us-central1")
+        llm = VertexAI(project=project_id, model_name="gemini-2.5-flash", temperature=0.7, location=location)
         
         memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
         

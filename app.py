@@ -1,5 +1,8 @@
-import streamlit as st
+import json
 import os
+from pathlib import Path
+
+import streamlit as st
 
 from create_vector_store import load_and_prepare_data, create_new_vector_store
 # main.py dosyasından gerekli fonksiyonları ve değişkeni import ediyoruz
@@ -8,14 +11,27 @@ from main import load_vector_store, create_conversational_chain, PROJECT_ID
 # --- GÜNCELLENEN KISIM: Secrets'ı okuma ve Ortam Değişkeni olarak ayarlama ---
 try:
     # Secrets'tan değişkenleri okuyup os.environ'a ayarlıyoruz.
-    os.environ["GOOGLE_PROJECT_ID"] = st.secrets["GOOGLE_PROJECT_ID"] 
-    os.environ["GOOGLE_SERVICE_ACCOUNT"] = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
+    project_id_secret = st.secrets["GOOGLE_PROJECT_ID"]
+    service_account_secret = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
+    location_secret = st.secrets.get("GOOGLE_LOCATION", "us-central1")
 
-    PROJECT_ID = st.secrets["GOOGLE_PROJECT_ID"]
+    # Servis hesabı JSON'unu geçici dosyaya yazıp Vertex/AI Platform'a tanıtıyoruz.
+    credentials_path = Path("/tmp/streamlit_service_account.json")
+    if isinstance(service_account_secret, str):
+        credentials_path.write_text(service_account_secret)
+    else:
+        credentials_path.write_text(json.dumps(dict(service_account_secret)))
 
-    st.session_state["location"] = "us-central1" # Streamlit başlığı için konumu sakla
-except Exception:
-    pass 
+    os.environ["GOOGLE_PROJECT_ID"] = project_id_secret
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(credentials_path)
+    os.environ["GOOGLE_LOCATION"] = location_secret
+
+    PROJECT_ID = project_id_secret
+
+    st.session_state["location"] = location_secret  # Streamlit başlığı için konumu sakla
+except Exception as exc:
+    st.warning("Google Cloud secrets yüklenemedi. Deploy ortamı için Streamlit secrets'ı kontrol edin.")
+    print(f"Secrets yüklenirken hata: {exc}")
 # ---------------------------------------------------------------------------------
 
 
