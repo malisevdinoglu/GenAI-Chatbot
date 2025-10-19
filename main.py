@@ -1,8 +1,8 @@
 import os
 import pandas as pd
-from langchain_core.documents import Document
+from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
-from langchain.chains.retrieval_qa import ConversationalRetrievalChain
+from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 
 # Vertex AI import'larına geri dönüyoruz:

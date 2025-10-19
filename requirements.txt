@@ -1,11 +1,15 @@
+# LangChain v0.1.16'ya sabitleyerek import hatalarını çözüyoruz.
+# Bu versiyon, tüm modüllerin (ConversationalRetrievalChain vb.) doğru yerde olmasını sağlar.
+langchain==0.1.16
+
+# Diğer ana bağımlılıklar
 pandas
-langchain
-langchain-community
 google-cloud-aiplatform
 langchain-google-vertexai
-# Gemini API çağrılarını kullanmak için gerekli:
 langchain-google-genai 
+
+# Vektör veritabanı
 faiss-cpu 
-# Web arayüzü için gerekli:
+
+# Web arayüzü
 streamlit
-langchain-core
