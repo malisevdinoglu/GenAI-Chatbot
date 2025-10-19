@@ -8,7 +8,17 @@ import vertexai
 
 from create_vector_store import load_and_prepare_data, create_new_vector_store
 # main.py dosyasından gerekli fonksiyonları ve değişkeni import ediyoruz
-from main import load_vector_store, create_conversational_chain, PROJECT_ID 
+from main import load_vector_store, create_conversational_chain, PROJECT_ID
+
+
+def _get_streamlit_secret(key):
+    """Streamlit secrets'tan güvenli şekilde okur; yoksa None döner."""
+    if not hasattr(st, "secrets"):
+        return None
+    try:
+        return st.secrets[key]
+    except Exception:
+        return None
 
 
 def configure_google_credentials():
@@ -21,12 +31,16 @@ def configure_google_credentials():
     )
 
     # Streamlit secrets varsa yedek olarak kullan
-    if "GOOGLE_PROJECT_ID" in st.secrets:
-        project_id = project_id or st.secrets["GOOGLE_PROJECT_ID"]
-    if "GOOGLE_LOCATION" in st.secrets:
-        location = os.environ.get("GOOGLE_LOCATION", st.secrets.get("GOOGLE_LOCATION", "us-central1"))
-    if "GOOGLE_SERVICE_ACCOUNT" in st.secrets and not service_account_payload:
-        secret_value = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
+    secret_project_id = _get_streamlit_secret("GOOGLE_PROJECT_ID")
+    secret_location = _get_streamlit_secret("GOOGLE_LOCATION")
+    secret_service_account = _get_streamlit_secret("GOOGLE_SERVICE_ACCOUNT")
+
+    if secret_project_id:
+        project_id = project_id or secret_project_id
+    if secret_location:
+        location = os.environ.get("GOOGLE_LOCATION", secret_location)
+    if secret_service_account and not service_account_payload:
+        secret_value = secret_service_account
         if isinstance(secret_value, str):
             service_account_payload = secret_value
         else:
