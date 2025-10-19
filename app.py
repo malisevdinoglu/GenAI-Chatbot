@@ -18,7 +18,9 @@ try:
     # Servis hesabı JSON'unu geçici dosyaya yazıp Vertex/AI Platform'a tanıtıyoruz.
     credentials_path = Path("/tmp/streamlit_service_account.json")
     if isinstance(service_account_secret, str):
-        credentials_path.write_text(service_account_secret)
+        # Çok satırlı JSON string'lerde kaçış karakterlerini gerçek satır sonlarına çeviriyoruz.
+        secret_text = service_account_secret.strip().replace("\\n", "\n")
+        credentials_path.write_text(secret_text)
     else:
         credentials_path.write_text(json.dumps(dict(service_account_secret)))
 
