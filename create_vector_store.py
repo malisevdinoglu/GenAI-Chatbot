@@ -26,6 +26,8 @@ def load_and_prepare_data(filepath, sample_size=100):
         print(f"Veri hazırlanırken hata oluştu: {e}")
         return None
 
+# create_vector_store.py dosyasındaki create_new_vector_store fonksiyonu
+
 def create_new_vector_store(documents, project_id):
     """Sıfırdan yeni bir vektör veritabanı oluşturur ve kaydeder."""
     if not documents:
@@ -34,15 +36,17 @@ def create_new_vector_store(documents, project_id):
     try:
         print("Veritabanı oluşturuluyor... Bu işlem birkaç dakika sürebilir.")
         
-        # !!! DEĞİŞİKLİK BURADA: Konum (location) us-central1 olarak güncellendi. !!!
-        embeddings = VertexAIEmbeddings(project=project_id, model_name="text-embedding-004",location="us-central1")
+        # Embedding için bölgeyi sabitleyelim ve kodun hata vermemesi için basit tutalım.
+        # Bu, Service Account (Secrets) yetkilendirmesi ile çalışmalıdır.
+        embeddings = VertexAIEmbeddings(project=project_id, model_name="text-embedding-004", location="us-central1") 
         
         vector_store = FAISS.from_documents(documents, embeddings)
         vector_store.save_local("faiss_index_recipes")
         
         print("\nBaşarılı! 'faiss_index_recipes' adında yeni ve temiz bir veritabanı oluşturuldu.")
     except Exception as e:
-        print(f"\nVeritabanı oluşturulurken bir hata oluştu: {e}")
+        # Hata mesajını daha anlaşılır yapıyoruz.
+        print(f"\nVeritabanı oluşturulurken KRİTİK HATA oluştu: {e}")
 
 if __name__ == "__main__":
     recipe_docs = load_and_prepare_data('recipes.csv')
