@@ -10,35 +10,69 @@ from create_vector_store import load_and_prepare_data, create_new_vector_store
 # main.py dosyasından gerekli fonksiyonları ve değişkeni import ediyoruz
 from main import load_vector_store, create_conversational_chain, PROJECT_ID 
 
-# --- GÜNCELLENEN KISIM: Secrets'ı okuma ve Ortam Değişkeni olarak ayarlama ---
-try:
-    # Secrets'tan değişkenleri okuyup os.environ'a ayarlıyoruz.
-    project_id_secret = st.secrets["GOOGLE_PROJECT_ID"]
-    service_account_secret = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
-    location_secret = st.secrets.get("GOOGLE_LOCATION", "us-central1")
 
-    # Servis hesabı JSON'unu geçici dosyaya yazıp Vertex/AI Platform'a tanıtıyoruz.
-    credentials_path = Path("/tmp/streamlit_service_account.json")
-    if isinstance(service_account_secret, str):
-        service_account_info = json.loads(service_account_secret.strip())
-    else:
-        service_account_info = dict(service_account_secret)
+def configure_google_credentials():
+    """Render veya Streamlit gibi ortamlar için kimlik bilgilerini hazırlar."""
+    project_id = os.environ.get("GOOGLE_PROJECT_ID")
+    location = os.environ.get("GOOGLE_LOCATION", "us-central1")
+    service_account_payload = (
+        os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+        or os.environ.get("GOOGLE_SERVICE_ACCOUNT")
+    )
+
+    # Streamlit secrets varsa yedek olarak kullan
+    if "GOOGLE_PROJECT_ID" in st.secrets:
+        project_id = project_id or st.secrets["GOOGLE_PROJECT_ID"]
+    if "GOOGLE_LOCATION" in st.secrets:
+        location = os.environ.get("GOOGLE_LOCATION", st.secrets.get("GOOGLE_LOCATION", "us-central1"))
+    if "GOOGLE_SERVICE_ACCOUNT" in st.secrets and not service_account_payload:
+        secret_value = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
+        if isinstance(secret_value, str):
+            service_account_payload = secret_value
+        else:
+            service_account_payload = json.dumps(dict(secret_value))
+
+    if not project_id or not service_account_payload:
+        warning_msg = (
+            "Google Cloud secrets yüklenemedi. Deploy ortamı için Streamlit secrets'ı "
+            "veya ortam değişkenlerini (GOOGLE_PROJECT_ID, GOOGLE_SERVICE_ACCOUNT_JSON) ayarlayın."
+        )
+        st.warning(warning_msg)
+        print("Secrets uyarısı: PROJECT_ID veya service account bulunamadı.")
+        return None, None, None
+
+    try:
+        if isinstance(service_account_payload, str):
+            service_account_info = json.loads(service_account_payload.strip())
+        else:
+            service_account_info = dict(service_account_payload)
+    except Exception as exc:
+        st.error("Google servis hesabı JSON'u çözümlenemedi. Ortam değişkenini/secrets'ı kontrol edin.")
+        print(f"Service account parse hatası: {exc}")
+        return None, None, None
+
+    if not service_account_info:
+        st.error("Servis hesabı bilgisi boş geldi. Ortam değişkenlerini kontrol edin.")
+        return None, None, None
+
+    if not isinstance(service_account_info, dict):
+        service_account_info = dict(service_account_payload)
 
     credentials = service_account.Credentials.from_service_account_info(service_account_info)
+    credentials_path = Path("/tmp/google_service_account.json")
     credentials_path.write_text(json.dumps(service_account_info))
 
-    os.environ["GOOGLE_PROJECT_ID"] = project_id_secret
+    os.environ["GOOGLE_PROJECT_ID"] = project_id
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(credentials_path)
-    os.environ["GOOGLE_LOCATION"] = location_secret
+    os.environ["GOOGLE_LOCATION"] = location
 
-    vertexai.init(project=project_id_secret, location=location_secret, credentials=credentials)
+    vertexai.init(project=project_id, location=location, credentials=credentials)
+    st.session_state["location"] = location
 
-    PROJECT_ID = project_id_secret
+    return project_id, location, credentials
 
-    st.session_state["location"] = location_secret  # Streamlit başlığı için konumu sakla
-except Exception as exc:
-    st.warning("Google Cloud secrets yüklenemedi. Deploy ortamı için Streamlit secrets'ı kontrol edin.")
-    print(f"Secrets yüklenirken hata: {exc}")
+
+PROJECT_ID, LOCATION, _CREDENTIALS = configure_google_credentials()
 # ---------------------------------------------------------------------------------
 
 
