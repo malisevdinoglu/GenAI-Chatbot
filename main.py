@@ -5,10 +5,30 @@ from langchain_community.vectorstores import Chroma
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 
+try:
+    import streamlit as st
+    from streamlit.runtime.scriptrunner import get_script_run_ctx
+except Exception:
+    st = None
+    def get_script_run_ctx():
+        return None
+
 # Vertex AI'dan sadece LLM için gerekli olanı import ediyoruz
 from langchain_google_vertexai import VertexAI, VertexAIEmbeddings 
 
 PROJECT_ID = "genai-final-project-475415" 
+
+def _emit_streamlit_exception(message, exception):
+    """Streamlit oturumu varsa hatayı ekranda gösterir."""
+    if st is None:
+        return
+    try:
+        if get_script_run_ctx() is None:
+            return
+        st.error(message)
+        st.exception(exception)
+    except Exception:
+        pass
 
 def load_vector_store(project_id, index_path="chroma_db_recipes"): 
     """Kaydedilmiş Chroma vektör deposunu yükler."""
@@ -25,6 +45,7 @@ def load_vector_store(project_id, index_path="chroma_db_recipes"):
         return vector_store
     except Exception as e:
         print(f"Vektör deposu yüklenirken bir hata oluştu: {e}")
+        _emit_streamlit_exception("Vektör deposu yüklenirken bir hata oluştu.", e)
         return None
 
 def create_conversational_chain(project_id, vector_store):
@@ -45,6 +66,7 @@ def create_conversational_chain(project_id, vector_store):
         return chain
     except Exception as e:
         print(f"Sohbet zinciri oluşturulurken bir hata oluştu: {e}")
+        _emit_streamlit_exception("Sohbet zinciri oluşturulurken bir hata oluştu.", e)
         return None
 
 # --- Ana Chatbot Çalışma Döngüsü ---

@@ -1,6 +1,14 @@
 import os
 
 import pandas as pd
+try:
+    import streamlit as st
+    from streamlit.runtime.scriptrunner import get_script_run_ctx
+except Exception:
+    st = None
+    def get_script_run_ctx():
+        return None
+
 # LangChain v0.1.16 için doğru import yolunu kullanıyoruz
 from langchain_core.documents import Document 
 # ChromaDB importu
@@ -14,6 +22,18 @@ def build_embeddings(project_id, location=None, model_name="text-embedding-004")
     """Vertex AI metin embedding modelini hazırlar."""
     location = location or os.environ.get("GOOGLE_LOCATION", "us-central1")
     return VertexAIEmbeddings(project=project_id, location=location, model_name=model_name)
+
+def _emit_streamlit_exception(message, exception):
+    """Streamlit oturumu varsa hatayı ekranda gösterir."""
+    if st is None:
+        return
+    try:
+        if get_script_run_ctx() is None:
+            return
+        st.error(message)
+        st.exception(exception)
+    except Exception:
+        pass
 
 def load_and_prepare_data(filepath, sample_size=100):
     """CSV dosyasını okur ve LangChain dokümanlarına dönüştürür."""
@@ -55,6 +75,7 @@ def create_new_vector_store(documents, project_id, persist_directory="chroma_db_
     except Exception as e:
         # Hata mesajını daha anlaşılır yapıyoruz.
         print(f"\nVeritabanı oluşturulurken KRİTİK HATA oluştu: {e}")
+        _emit_streamlit_exception("Veritabanı oluşturulurken bir hata oluştu. Ayrıntılar için logları kontrol edin.", e)
 
 if __name__ == "__main__":
     recipe_docs = load_and_prepare_data('recipes.csv')
