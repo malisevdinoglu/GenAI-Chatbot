@@ -1,10 +1,13 @@
 import os
 import pandas as pd
-from langchain.docstore.document import Document
+# LangChain v0.1.16 için doğru import yolunu kullanıyoruz
+from langchain_core.documents import Document 
+# ChromaDB importu
 from langchain_community.vectorstores import Chroma
-from langchain_google_vertexai import VertexAIEmbeddings
 
-# Proje Kimliğiniz (Project ID)
+# VertexAIEmbeddings importu kaldırıldı.
+
+# Proje Kimliğiniz (Sadece LLM için kalacak)
 PROJECT_ID = "genai-final-project-475415"
 
 def load_and_prepare_data(filepath, sample_size=100):
@@ -26,8 +29,6 @@ def load_and_prepare_data(filepath, sample_size=100):
         print(f"Veri hazırlanırken hata oluştu: {e}")
         return None
 
-# create_vector_store.py dosyasındaki create_new_vector_store fonksiyonu
-
 def create_new_vector_store(documents, project_id):
     """Sıfırdan yeni bir vektör veritabanı oluşturur ve kaydeder."""
     if not documents:
@@ -36,14 +37,15 @@ def create_new_vector_store(documents, project_id):
     try:
         print("Veritabanı oluşturuluyor... Bu işlem birkaç dakika sürebilir.")
         
-        # Embedding için bölgeyi sabitleyelim ve kodun hata vermemesi için basit tutalım.
-        # Bu, Service Account (Secrets) yetkilendirmesi ile çalışmalıdır.
-        embeddings = VertexAIEmbeddings(project=project_id, model_name="text-embedding-004", location="us-central1") 
+        # !!! KRİTİK DEĞİŞİKLİK: Embeddings API çağrısı kaldırıldı !!!
+        # ChromaDB kendi varsayılan (lokal, kurulum hatası vermeyen) embeddings modelini kullanacak.
+        vector_store = Chroma.from_documents(
+            documents, 
+            persist_directory="chroma_db_recipes" # Yeni ve doğru klasör adı
+        )
+        vector_store.persist()
         
-        vector_store = Chroma.from_documents(documents, embeddings)
-        vector_store.save_local("faiss_index_recipes")
-        
-        print("\nBaşarılı! 'faiss_index_recipes' adında yeni ve temiz bir veritabanı oluşturuldu.")
+        print("\nBaşarılı! 'chroma_db_recipes' adında yeni ve temiz bir veritabanı oluşturuldu.")
     except Exception as e:
         # Hata mesajını daha anlaşılır yapıyoruz.
         print(f"\nVeritabanı oluşturulurken KRİTİK HATA oluştu: {e}")

@@ -1,5 +1,4 @@
 # LangChain v0.1.16'ya sabitleyerek import hatalarını çözüyoruz.
-# Bu versiyon, tüm modüllerin (ConversationalRetrievalChain vb.) doğru yerde olmasını sağlar.
 langchain==0.1.16
 
 # Diğer ana bağımlılıklar
@@ -8,10 +7,8 @@ google-cloud-aiplatform
 langchain-google-vertexai
 langchain-google-genai 
 
-
-# Yeni vektör DB
-chromadb
-
+# Vektör veritabanı (Kurulumu basit olan ChromaDB'ye geçildi)
+chromadb 
 
 # Web arayüzü
 streamlit

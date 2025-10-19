@@ -1,24 +1,27 @@
 import os
 import pandas as pd
-from langchain_core.documents import Document # Düzeltme 1: Document import yolu güncellendi
+from langchain_core.documents import Document 
 from langchain_community.vectorstores import Chroma
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 
-from langchain_google_vertexai import VertexAI, VertexAIEmbeddings 
+# Vertex AI'dan sadece LLM için gerekli olanı import ediyoruz
+from langchain_google_vertexai import VertexAI 
+# VertexAIEmbeddings importu kaldırıldı.
 
 PROJECT_ID = "genai-final-project-475415" 
 
-def load_vector_store(project_id, index_path="chroma_db_recipes"): # Düzeltme 2: Klasör adı Chroma'ya ayarlandı
+def load_vector_store(project_id, index_path="chroma_db_recipes"): 
     """Kaydedilmiş Chroma vektör deposunu yükler."""
+    # Index path'i Chroma'ya ayarlandı.
     if not os.path.exists(index_path):
-        # Hata mesajı Chroma klasörünü gösterecek
         print(f"Hata: '{index_path}' klasörü bulunamadı.") 
         return None
     try:
-        embeddings = VertexAIEmbeddings(project=project_id, model_name="text-embedding-004",location="us-central1")
-        # Chroma yükleme yapısı
-        vector_store = Chroma(persist_directory=index_path, embedding_function=embeddings)
+        # !!! KRİTİK DEĞİŞİKLİK: Embeddings objesi kaldırıldı !!!
+        # ChromaDB kendi varsayılan (lokal) embeddings modelini kullanacak.
+        vector_store = Chroma(persist_directory=index_path) 
+        
         print("Vektör deposu başarıyla yüklendi.")
         return vector_store
     except Exception as e:
@@ -28,7 +31,7 @@ def load_vector_store(project_id, index_path="chroma_db_recipes"): # Düzeltme 2
 def create_conversational_chain(project_id, vector_store):
     """Sohbet zincirini oluşturur."""
     try:
-        # LLM'i de Embedding modeliyle aynı konuma (us-central1) taşıyoruz.
+        # LLM (Gemini) için Vertex AI kullanılmaya devam ediyor.
         llm = VertexAI(project=project_id, model_name="gemini-2.5-flash", temperature=0.7, location="us-central1")
         
         memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)

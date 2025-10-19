@@ -15,3 +15,5 @@ faiss_index_recipes/
 *.log
 *.out
 
+chroma_db_recipes/
+
