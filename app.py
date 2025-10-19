@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 
+from create_vector_store import load_and_prepare_data, create_new_vector_store
 # main.py dosyasından gerekli fonksiyonları ve değişkeni import ediyoruz
 # Not: main.py dosyanızın aynı klasörde olduğundan emin olun!
 from main import load_vector_store, create_conversational_chain, PROJECT_ID 
@@ -25,23 +26,44 @@ except Exception:
 
 
 # Streamlit, bu fonksiyonu sadece bir kere çalıştırır ve sonucunu önbelleğe alır.
+# app.py dosyasındaki setup_rag_pipeline fonksiyonu
+
 @st.cache_resource
 def setup_rag_pipeline():
-    """RAG zincirini yükler ve hazırlar."""
+    """RAG zincirini yükler ve hazırlar, yoksa oluşturur."""
     
-    # Proje ID'sinin ayarlı olduğundan emin olalım
-    if not PROJECT_ID or PROJECT_ID == "SENIN-PROJE-IDN":
-        st.error("HATA: Lütfen main.py dosyasında geçerli bir Proje ID'si girin.")
+    # Proje ID'sinin ayarlı olduğundan emin olalım (Secrets'tan geliyor)
+    if not PROJECT_ID:
+        st.error("HATA: Proje ID'si ayarlanmadı. Lütfen Streamlit Secrets'ı kontrol edin.")
         return None
 
-    # Vektör deposu yükleniyor
+    # 1. Vektör deposu yükleniyor
     st.write("Vektör deposu yükleniyor...")
     vector_store = load_vector_store(project_id=PROJECT_ID)
-    if not vector_store:
-        st.error("Vektör deposu yüklenemedi. Lütfen FAISS klasörünün varlığını kontrol edin.")
-        return None
     
-    # Sohbet zinciri oluşturuluyor
+    # 2. Eğer yüklenemezse (klasör yoksa), sıfırdan oluşturmayı dene
+    if not vector_store:
+        st.warning("FAISS klasörü bulunamadı. Veritabanı yeniden oluşturuluyor. Bu işlem birkaç dakika sürebilir...")
+        
+        # Veri setini yükle ve hazırla (recipes.csv aynı klasörde olmalı!)
+        recipe_docs = load_and_prepare_data('recipes.csv') 
+        
+        if recipe_docs:
+            # Vektör veritabanını oluştur ve kaydet (Bulut üzerinde API'leri çağırır!)
+            # Service Account yetkisi (Secrets) burada kullanılacaktır.
+            create_new_vector_store(recipe_docs, PROJECT_ID)
+            
+            # Oluşturulduktan sonra tekrar yüklemeyi dene
+            vector_store = load_vector_store(project_id=PROJECT_ID)
+            
+            if not vector_store:
+                 st.error("Veritabanı oluşturulduktan sonra bile yüklenemedi. Lütfen logları kontrol edin.")
+                 return None
+        else:
+             st.error("Veri (recipes.csv) yüklenemediği için veritabanı oluşturulamadı.")
+             return None
+
+    # 3. Sohbet zinciri oluşturuluyor
     st.write("Sohbet zinciri oluşturuluyor...")
     chain = create_conversational_chain(project_id=PROJECT_ID, vector_store=vector_store)
     
