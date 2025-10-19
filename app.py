@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 
 import streamlit as st
+from google.oauth2 import service_account
+import vertexai
 
 from create_vector_store import load_and_prepare_data, create_new_vector_store
 # main.py dosyasından gerekli fonksiyonları ve değişkeni import ediyoruz
@@ -18,15 +20,18 @@ try:
     # Servis hesabı JSON'unu geçici dosyaya yazıp Vertex/AI Platform'a tanıtıyoruz.
     credentials_path = Path("/tmp/streamlit_service_account.json")
     if isinstance(service_account_secret, str):
-        # Çok satırlı JSON string'lerde kaçış karakterlerini gerçek satır sonlarına çeviriyoruz.
-        secret_text = service_account_secret.strip().replace("\\n", "\n")
-        credentials_path.write_text(secret_text)
+        service_account_info = json.loads(service_account_secret.strip())
     else:
-        credentials_path.write_text(json.dumps(dict(service_account_secret)))
+        service_account_info = dict(service_account_secret)
+
+    credentials = service_account.Credentials.from_service_account_info(service_account_info)
+    credentials_path.write_text(json.dumps(service_account_info))
 
     os.environ["GOOGLE_PROJECT_ID"] = project_id_secret
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(credentials_path)
     os.environ["GOOGLE_LOCATION"] = location_secret
+
+    vertexai.init(project=project_id_secret, location=location_secret, credentials=credentials)
 
     PROJECT_ID = project_id_secret
 
