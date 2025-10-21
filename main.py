@@ -1,12 +1,18 @@
 import os
 import pandas as pd
-from langchain_core.documents import Document
+# LangChain v0.1.16 için doğru import yolları
+from langchain_core.documents import Document 
 from langchain_community.vectorstores import Chroma
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
-
+# Google Cloud Kimlik Bilgileri için gerekli
 from google.oauth2 import service_account
 
+# Vertex AI'dan sadece LLM için gerekli olanı import ediyoruz
+from langchain_google_vertexai import VertexAI 
+# VertexAIEmbeddings importu kaldırıldı.
+
+# Streamlit helper'ları ekleniyor (app.py ile tutarlı olmalı)
 try:
     import streamlit as st
     from streamlit.runtime.scriptrunner import get_script_run_ctx
@@ -15,9 +21,6 @@ except Exception:
 
     def get_script_run_ctx():
         return None
-
-# Vertex AI'dan sadece LLM için gerekli olanı import ediyoruz
-from langchain_google_vertexai import VertexAI, VertexAIEmbeddings
 
 PROJECT_ID = "genai-final-project-475415" 
 
@@ -34,24 +37,15 @@ def _emit_streamlit_exception(message, exception):
         pass
 
 def load_vector_store(project_id, index_path="chroma_db_recipes"): 
-    """Kaydedilmiş Chroma vektör deposunu yükler."""
-    # Index path'i Chroma'ya ayarlandı.
+    """Kaydedilmiş Chroma vektör deposunu yükler (Lokal Embeddings kullanır)."""
     if not os.path.exists(index_path):
         print(f"Hata: '{index_path}' klasörü bulunamadı.") 
         return None
     try:
-        location = os.environ.get("GOOGLE_LOCATION", "us-central1")
-        credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-        credentials = None
-        if credentials_path and os.path.exists(credentials_path):
-            credentials = service_account.Credentials.from_service_account_file(credentials_path)
-        embeddings = VertexAIEmbeddings(
-            project=project_id,
-            location=location,
-            model_name="text-embedding-005",
-            credentials=credentials,
-        )
-        vector_store = Chroma(persist_directory=index_path, embedding_function=embeddings) 
+        # !!! KRİTİK DEĞİŞİKLİK: VertexAIEmbeddings objesi kaldırıldı !!!
+        # ChromaDB kendi varsayılan (lokal) embeddings modelini kullanacak.
+        # Bu, kurulum/zaman aşımı hatasını çözer.
+        vector_store = Chroma(persist_directory=index_path) 
         
         print("Vektör deposu başarıyla yüklendi.")
         return vector_store
@@ -61,13 +55,15 @@ def load_vector_store(project_id, index_path="chroma_db_recipes"):
         return None
 
 def create_conversational_chain(project_id, vector_store):
-    """Sohbet zincirini oluşturur."""
+    """Sohbet zincirini oluşturur (LLM için Vertex AI kullanır)."""
     try:
+        # Credential yükleme mantığı aynı kalır, VertexAI'a yetki verir.
         location = os.environ.get("GOOGLE_LOCATION", "us-central1")
         credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         credentials = None
         if credentials_path and os.path.exists(credentials_path):
             credentials = service_account.Credentials.from_service_account_file(credentials_path)
+            
         # LLM (Gemini) için Vertex AI kullanılmaya devam ediyor.
         llm = VertexAI(
             project=project_id,
