@@ -90,6 +90,7 @@ def configure_google_credentials():
     # VertexAI init'e gerek yok, kütüphaneler doğrudan credentials veya ADC kullanır
     st.session_state["location"] = location
     st.session_state["project_id"] = project_id # Proje ID'sini session state'e ekle
+    st.session_state["credentials_provided"] = bool(credentials)
 
     return project_id, location, credentials
 
@@ -100,6 +101,10 @@ PROJECT_ID, LOCATION, _CREDENTIALS = configure_google_credentials()
 
 # --- Vektör Deposu ve Zincir Kurulum Fonksiyonları (ChromaDB için güncellendi) ---
 
+def _get_vertex_credentials():
+    """Service account varsa döner, aksi halde None (ADC)."""
+    return _CREDENTIALS
+
 def build_embeddings(project_id, location=None, model_name="text-embedding-005"): # Model adını kontrol et
     """Vertex AI metin embedding modelini hazırlar."""
     # Kimlik bilgileri configure_google_credentials'dan alınacak (ADC veya service account)
@@ -107,7 +112,7 @@ def build_embeddings(project_id, location=None, model_name="text-embedding-005")
         project=project_id,
         location=location or LOCATION, # Global LOCATION kullan
         model_name=model_name,
-        # credentials parametresine gerek yok, ADC veya ortam değişkeni kullanılır
+        credentials=_get_vertex_credentials(),
     )
 
 # @st.cache_resource kaldırıldı, çünkü load_vector_store artık oluşturma da yapabilir
@@ -164,7 +169,13 @@ def setup_conversational_chain(project_id, vector_store):
         return None
     try:
         st.write("Sohbet zinciri oluşturuluyor...")
-        llm = VertexAI(project=project_id, model_name="gemini-1.5-flash-001", temperature=0.7, location=LOCATION)
+        llm = VertexAI(
+            project=project_id,
+            model_name="gemini-1.5-flash-001",
+            temperature=0.7,
+            location=LOCATION,
+            credentials=_get_vertex_credentials(),
+        )
         
         memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True, output_key='answer') # output_key eklendi
         
