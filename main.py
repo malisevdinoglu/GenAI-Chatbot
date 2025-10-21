@@ -48,7 +48,7 @@ def load_vector_store(project_id, index_path="chroma_db_recipes"):
         embeddings = VertexAIEmbeddings(
             project=project_id,
             location=location,
-            model_name="text-embedding-004",
+            model_name="text-embedding-005",
             credentials=credentials,
         )
         vector_store = Chroma(persist_directory=index_path, embedding_function=embeddings) 

@@ -8,9 +8,13 @@ google-cloud-cli*
 *.tar.gz
 
 # Vektör veritabanı (Deploy için zorunlu olarak hariç tutulmalı)
-faiss_index_recipes/
+#faiss_index_recipes/
+recipes.csv
 
 # Çıktı ve log dosyaları
 *.log
 *.out
+
+
+
 
