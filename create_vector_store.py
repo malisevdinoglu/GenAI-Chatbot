@@ -1,11 +1,48 @@
+import json
 import os
 import pandas as pd
 from langchain_core.documents import Document 
 from langchain_community.vectorstores import Chroma
-# VertexAIEmbeddings importu ve bağımlılıkları kaldırıldı.
+from google.oauth2 import service_account
+from langchain_google_vertexai import VertexAIEmbeddings
 
 # Proje Kimliğiniz (Sadece LLM için kalacak)
 PROJECT_ID = "genai-final-project-475415"
+
+def _resolve_vertex_credentials():
+    """Env değişkenlerinden Vertex AI kimlik bilgilerini toparlar."""
+    location = os.environ.get("GOOGLE_LOCATION", "us-central1")
+    credentials = None
+
+    service_account_payload = (
+        os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+        or os.environ.get("GOOGLE_SERVICE_ACCOUNT")
+    )
+    credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+
+    try:
+        if service_account_payload:
+            if isinstance(service_account_payload, str):
+                service_account_info = json.loads(service_account_payload)
+            else:
+                service_account_info = dict(service_account_payload)
+            credentials = service_account.Credentials.from_service_account_info(service_account_info)
+        elif credentials_path and os.path.exists(credentials_path):
+            credentials = service_account.Credentials.from_service_account_file(credentials_path)
+    except Exception as exc:
+        print(f"Servis hesabı kimlik bilgileri yüklenemedi: {exc}")
+
+    return location, credentials
+
+def _build_embeddings(project_id):
+    """Chroma için Vertex AI embedding nesnesi hazırlar."""
+    location, credentials = _resolve_vertex_credentials()
+    return VertexAIEmbeddings(
+        project=project_id,
+        location=location,
+        model_name="text-embedding-005",
+        credentials=credentials,
+    )
 
 def load_and_prepare_data(filepath, sample_size=100):
     """CSV dosyasını okur ve LangChain dokümanlarına dönüştürür."""
@@ -44,10 +81,10 @@ def create_new_vector_store(documents, project_id, persist_directory="chroma_db_
     try:
         print("\nVeritabanı oluşturuluyor... Bu işlem birkaç dakika sürebilir.")
         
-        # !!! KRİTİK DEĞİŞİKLİK: Embeddings API çağrısı kaldırıldı !!!
-        # ChromaDB kendi varsayılan (lokal) embeddings modelini kullanacak.
+        embeddings = _build_embeddings(project_id)
         vector_store = Chroma.from_documents(
             documents, 
+            embedding=embeddings,
             persist_directory=persist_directory 
         )
         vector_store.persist()

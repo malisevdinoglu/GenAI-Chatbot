@@ -100,7 +100,7 @@ PROJECT_ID, LOCATION, _CREDENTIALS = configure_google_credentials()
 
 # --- Vektör Deposu ve Zincir Kurulum Fonksiyonları (ChromaDB için güncellendi) ---
 
-def build_embeddings(project_id, location=None, model_name="text-embedding-004"): # Model adını kontrol et
+def build_embeddings(project_id, location=None, model_name="text-embedding-005"): # Model adını kontrol et
     """Vertex AI metin embedding modelini hazırlar."""
     # Kimlik bilgileri configure_google_credentials'dan alınacak (ADC veya service account)
     return VertexAIEmbeddings(
@@ -185,7 +185,7 @@ def setup_conversational_chain(project_id, vector_store):
 
 st.set_page_config(page_title="Tarif Asistanı", layout="wide")
 st.title("🍜 Sağlıklı Tarif Asistanı (RAG Chatbot)")
-st.caption(f"LLM: Gemini / Embedding: text-embedding-004 / Konum: {st.session_state.get('location', 'Bilinmiyor')}")
+st.caption(f"LLM: Gemini / Embedding: text-embedding-005 / Konum: {st.session_state.get('location', 'Bilinmiyor')}")
 
 # Vektör deposunu ve RAG zincirini kur (state içinde sakla)
 if "rag_chain" not in st.session_state:
