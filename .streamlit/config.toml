@@ -1,7 +1,11 @@
 [server]
-# Bu ayar, Streamlit'in FAISS klasörünü görmezden gelmesini sağlar.
-# Ancak, bu standart bir Streamlit komutu değildir, sadece kodun çalışmasını engelleyen 
-# istenmeyen bir dosyayı gizlemeye yönelik bir denemedir.
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+port = 8501
 
-# Alternatif olarak, FAISS klasörünü .gitignore'a zaten ekledik,
-# bu yüzden bu adım yerine FAISS'in yeniden oluşturulmasını deneyelim.
+[theme]
+primaryColor = "#5B84B1"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#262730"
+textColor = "#FAFAFA"
