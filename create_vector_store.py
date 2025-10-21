@@ -96,7 +96,7 @@ def create_new_vector_store(documents, project_id, persist_directory="chroma_db_
 
         # !!! DEĞİŞİKLİK BURADA: Dokümanları gruplar halinde işleme !!!
         vector_store = None
-        batch_size = 50 # Her seferinde kaç doküman işlenecek (API limitine göre ayarlanabilir)
+        batch_size = 20 # Her seferinde kaç doküman işlenecek (API limitine göre ayarlanabilir)
         total_docs = len(documents)
         
         for i in range(0, total_docs, batch_size):
@@ -121,7 +121,7 @@ def create_new_vector_store(documents, project_id, persist_directory="chroma_db_
             
             # !!! DEĞİŞİKLİK BURADA: Her gruptan sonra kısa bir süre bekle !!!
             # Kota hatası almamak için 1 saniye bekle (Gerekirse artırılabilir)
-            time.sleep(1) 
+            time.sleep(5) 
 
         # İşlem bittikten sonra veritabanını diske kaydet (Chroma bunu zaten yapıyor olabilir ama garanti olsun)
         if vector_store:
@@ -137,6 +137,6 @@ def create_new_vector_store(documents, project_id, persist_directory="chroma_db_
 
 if __name__ == "__main__":
     # sample_size'ı ihtiyacınıza göre ayarlayabilirsiniz
-    recipe_docs = load_and_prepare_data('recipes.csv', sample_size=300) 
+    recipe_docs = load_and_prepare_data('recipes.csv', sample_size=1000) 
     if recipe_docs:
         create_new_vector_store(recipe_docs, PROJECT_ID)
