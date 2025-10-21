@@ -23,6 +23,8 @@ except Exception:
         return None
 
 PROJECT_ID = "genai-final-project-475415" 
+DEFAULT_EMBEDDING_MODEL = os.environ.get("VERTEX_EMBEDDING_MODEL", "text-embedding-005")
+DEFAULT_LLM_MODEL = os.environ.get("VERTEX_LLM_MODEL", "gemini-1.5-flash")
 
 def _resolve_vertex_credentials():
     """Env'den konum ve kimlik bilgilerini çıkarır."""
@@ -56,7 +58,7 @@ def _build_embeddings(project_id):
     return VertexAIEmbeddings(
         project=project_id,
         location=location,
-        model_name="text-embedding-005",
+        model_name=DEFAULT_EMBEDDING_MODEL,
         credentials=credentials,
     )
 
@@ -98,7 +100,7 @@ def create_conversational_chain(project_id, vector_store):
         # LLM (Gemini) için Vertex AI kullanılmaya devam ediyor.
         llm = VertexAI(
             project=project_id,
-            model_name="gemini-2.5-flash",
+            model_name=DEFAULT_LLM_MODEL,
             temperature=0.7,
             location=location,
             credentials=credentials,

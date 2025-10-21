@@ -8,6 +8,7 @@ from langchain_google_vertexai import VertexAIEmbeddings
 
 # Proje Kimliğiniz (Sadece LLM için kalacak)
 PROJECT_ID = "genai-final-project-475415"
+DEFAULT_EMBEDDING_MODEL = os.environ.get("VERTEX_EMBEDDING_MODEL", "text-embedding-005")
 
 def _resolve_vertex_credentials():
     """Env değişkenlerinden Vertex AI kimlik bilgilerini toparlar."""
@@ -40,7 +41,7 @@ def _build_embeddings(project_id):
     return VertexAIEmbeddings(
         project=project_id,
         location=location,
-        model_name="text-embedding-005",
+        model_name=DEFAULT_EMBEDDING_MODEL,
         credentials=credentials,
     )
 

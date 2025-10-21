@@ -19,8 +19,10 @@ from langchain_core.documents import Document # load_and_prepare_data için gere
 # (Bunlar zaten ChromaDB kullanıyor olmalı)
 from create_vector_store import load_and_prepare_data, create_new_vector_store 
 
-# Proje Kimliğiniz
+# Proje Kimliğiniz ve Varsayılan Model Ayarları
 PROJECT_ID = "genai-final-project-475415" # Kendi Proje ID'nizle değiştirin
+DEFAULT_EMBEDDING_MODEL = os.environ.get("VERTEX_EMBEDDING_MODEL", "text-embedding-005")
+DEFAULT_LLM_MODEL = os.environ.get("VERTEX_LLM_MODEL", "gemini-1.5-flash")
 
 def _get_streamlit_secret(key):
     """Streamlit secrets'tan güvenli şekilde okur; yoksa None döner."""
@@ -90,6 +92,8 @@ def configure_google_credentials():
     # VertexAI init'e gerek yok, kütüphaneler doğrudan credentials veya ADC kullanır
     st.session_state["location"] = location
     st.session_state["project_id"] = project_id # Proje ID'sini session state'e ekle
+    st.session_state["embedding_model"] = DEFAULT_EMBEDDING_MODEL
+    st.session_state["llm_model"] = DEFAULT_LLM_MODEL
     st.session_state["credentials_provided"] = bool(credentials)
 
     return project_id, location, credentials
@@ -105,7 +109,7 @@ def _get_vertex_credentials():
     """Service account varsa döner, aksi halde None (ADC)."""
     return _CREDENTIALS
 
-def build_embeddings(project_id, location=None, model_name="text-embedding-005"): # Model adını kontrol et
+def build_embeddings(project_id, location=None, model_name=DEFAULT_EMBEDDING_MODEL): # Model adını kontrol et
     """Vertex AI metin embedding modelini hazırlar."""
     # Kimlik bilgileri configure_google_credentials'dan alınacak (ADC veya service account)
     return VertexAIEmbeddings(
@@ -171,7 +175,7 @@ def setup_conversational_chain(project_id, vector_store):
         st.write("Sohbet zinciri oluşturuluyor...")
         llm = VertexAI(
             project=project_id,
-            model_name="gemini-1.5-flash-001",
+            model_name=DEFAULT_LLM_MODEL,
             temperature=0.7,
             location=LOCATION,
             credentials=_get_vertex_credentials(),
@@ -196,7 +200,11 @@ def setup_conversational_chain(project_id, vector_store):
 
 st.set_page_config(page_title="Tarif Asistanı", layout="wide")
 st.title("🍜 Sağlıklı Tarif Asistanı (RAG Chatbot)")
-st.caption(f"LLM: Gemini / Embedding: text-embedding-005 / Konum: {st.session_state.get('location', 'Bilinmiyor')}")
+st.caption(
+    f"LLM: {st.session_state.get('llm_model', DEFAULT_LLM_MODEL)} "
+    f"/ Embedding: {st.session_state.get('embedding_model', DEFAULT_EMBEDDING_MODEL)} "
+    f"/ Konum: {st.session_state.get('location', 'Bilinmiyor')}"
+)
 
 # Vektör deposunu ve RAG zincirini kur (state içinde sakla)
 if "rag_chain" not in st.session_state:
