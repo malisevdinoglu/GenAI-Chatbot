@@ -1,18 +1,12 @@
-import json
 import os
 import pandas as pd
-# LangChain v0.1.16 için doğru import yolları
-from langchain_core.documents import Document 
+from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
-# Google Cloud Kimlik Bilgileri için gerekli
+
 from google.oauth2 import service_account
 
-# Vertex AI bileşenleri
-from langchain_google_vertexai import VertexAIEmbeddings, VertexAI 
-
-# Streamlit helper'ları ekleniyor (app.py ile tutarlı olmalı)
 try:
     import streamlit as st
     from streamlit.runtime.scriptrunner import get_script_run_ctx
@@ -22,45 +16,10 @@ except Exception:
     def get_script_run_ctx():
         return None
 
+# Vertex AI'dan sadece LLM için gerekli olanı import ediyoruz
+from langchain_google_vertexai import VertexAI, VertexAIEmbeddings
+
 PROJECT_ID = "genai-final-project-475415" 
-DEFAULT_EMBEDDING_MODEL = os.environ.get("VERTEX_EMBEDDING_MODEL", "text-embedding-005")
-DEFAULT_LLM_MODEL = os.environ.get("VERTEX_LLM_MODEL", "gemini-1.5-flash")
-
-def _resolve_vertex_credentials():
-    """Env'den konum ve kimlik bilgilerini çıkarır."""
-    location = os.environ.get("GOOGLE_LOCATION", "us-central1")
-    credentials = None
-
-    service_account_payload = (
-        os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
-        or os.environ.get("GOOGLE_SERVICE_ACCOUNT")
-    )
-    credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-
-    try:
-        if service_account_payload:
-            if isinstance(service_account_payload, str):
-                service_account_info = json.loads(service_account_payload)
-            else:
-                service_account_info = dict(service_account_payload)
-            credentials = service_account.Credentials.from_service_account_info(service_account_info)
-        elif credentials_path and os.path.exists(credentials_path):
-            credentials = service_account.Credentials.from_service_account_file(credentials_path)
-        # Aksi halde ADC kullanılacak; credentials None kalır.
-    except Exception as exc:
-        print(f"Servis hesabı kimlik bilgileri yüklenemedi: {exc}")
-
-    return location, credentials
-
-def _build_embeddings(project_id):
-    """Vertex AI metin embedding modelini hazırlar."""
-    location, credentials = _resolve_vertex_credentials()
-    return VertexAIEmbeddings(
-        project=project_id,
-        location=location,
-        model_name=DEFAULT_EMBEDDING_MODEL,
-        credentials=credentials,
-    )
 
 def _emit_streamlit_exception(message, exception):
     """Streamlit oturumu varsa hatayı ekranda gösterir."""
@@ -75,16 +34,24 @@ def _emit_streamlit_exception(message, exception):
         pass
 
 def load_vector_store(project_id, index_path="chroma_db_recipes"): 
-    """Kaydedilmiş Chroma vektör deposunu yükler (Lokal Embeddings kullanır)."""
+    """Kaydedilmiş Chroma vektör deposunu yükler."""
+    # Index path'i Chroma'ya ayarlandı.
     if not os.path.exists(index_path):
         print(f"Hata: '{index_path}' klasörü bulunamadı.") 
         return None
     try:
-        embeddings = _build_embeddings(project_id)
-        vector_store = Chroma(
-            persist_directory=index_path,
-            embedding_function=embeddings,
-        ) 
+        location = os.environ.get("GOOGLE_LOCATION", "us-central1")
+        credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        credentials = None
+        if credentials_path and os.path.exists(credentials_path):
+            credentials = service_account.Credentials.from_service_account_file(credentials_path)
+        embeddings = VertexAIEmbeddings(
+            project=project_id,
+            location=location,
+            model_name="text-embedding-005",
+            credentials=credentials,
+        )
+        vector_store = Chroma(persist_directory=index_path, embedding_function=embeddings) 
         
         print("Vektör deposu başarıyla yüklendi.")
         return vector_store
@@ -94,13 +61,17 @@ def load_vector_store(project_id, index_path="chroma_db_recipes"):
         return None
 
 def create_conversational_chain(project_id, vector_store):
-    """Sohbet zincirini oluşturur (LLM için Vertex AI kullanır)."""
+    """Sohbet zincirini oluşturur."""
     try:
-        location, credentials = _resolve_vertex_credentials()
+        location = os.environ.get("GOOGLE_LOCATION", "us-central1")
+        credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        credentials = None
+        if credentials_path and os.path.exists(credentials_path):
+            credentials = service_account.Credentials.from_service_account_file(credentials_path)
         # LLM (Gemini) için Vertex AI kullanılmaya devam ediyor.
         llm = VertexAI(
             project=project_id,
-            model_name=DEFAULT_LLM_MODEL,
+            model_name="gemini-2.5-flash",
             temperature=0.7,
             location=location,
             credentials=credentials,
